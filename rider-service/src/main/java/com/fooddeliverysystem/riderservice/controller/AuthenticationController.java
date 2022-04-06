@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:3000/")
 @RequestMapping("/api/auth")
 public class AuthenticationController {
 
@@ -56,18 +56,31 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/signup", method = RequestMethod.POST)
-    public Rider createRider(@RequestBody Rider rider){
+    public Rider createRider(@RequestBody SignupRequest signupRequest){
         List<Authority> authorityList=new ArrayList<>();
         authorityList.add(createAuthority("ADMIN","Admin role"));
-//        authorityList.add(createAuthority("USER","Admin role"));
-        Rider rider1 = new Rider();
-        rider1.setUsername(rider.getUsername());
-        rider1.setEmail(rider.getEmail());
-        rider1.setPassword(passwordEncoder.encode(rider.getPassword()));
-        rider1.setAuthorities(authorityList);
-
-        return riderService.saveRider(rider1);
+//        Rider rider = new Rider(signupRequest.getEmail(), signupRequest.getUsername(), passwordEncoder.encode(signupRequest.getPassword()));
+        Rider rider = new Rider();
+        rider.setEmail(signupRequest.getEmail());
+        rider.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
+        rider.setUsername(signupRequest.getUsername());
+        rider.setAuthorities(authorityList);
+        return riderService.saveRider(rider);
     }
+
+//    @RequestMapping(value = "/signup", method = RequestMethod.POST)
+//    public Rider createRider(@RequestBody Rider rider){
+//        List<Authority> authorityList=new ArrayList<>();
+//        authorityList.add(createAuthority("ADMIN","Admin role"));
+////        authorityList.add(createAuthority("USER","Admin role"));
+//        Rider rider1 = new Rider();
+//        rider1.setUsername(rider.getUsername());
+//        rider1.setEmail(rider.getEmail());
+//        rider1.setPassword(passwordEncoder.encode(rider.getPassword()));
+//        rider1.setAuthorities(authorityList);
+//
+//        return riderService.saveRider(rider1);
+//    }
 
     @RequestMapping(value = "/profile/{id}", method = RequestMethod.PUT)
     public Rider updateRider(@RequestBody Rider rider, @PathVariable("id") int id) {
@@ -76,12 +89,21 @@ public class AuthenticationController {
 
     @RequestMapping(value = "/profile", method = RequestMethod.GET)
     public ResponseEntity<?> fetchProfile(Principal user){
-        Rider rider = (Rider) riderService.loadUserByUsername(user.getName());
+//        Rider rider = (Rider) riderService.loadUserByUsername(user.getName());
+        MessageResponse message = new MessageResponse();
         RiderProfile riderProfile = new RiderProfile();
-        riderProfile.setFirstName(rider.getFirstName());
-        riderProfile.setLastName(rider.getLastName());
-        riderProfile.setUsername(rider.getUsername());
-        return ResponseEntity.ok(riderProfile);
+        try {
+            Rider rider = (Rider) riderService.loadUserByUsername(user.getName());
+            riderProfile.setFirstName(rider.getFirstName());
+            riderProfile.setLastName(rider.getLastName());
+            riderProfile.setUsername(rider.getUsername());
+            message.setMessage("Rider profile is available");
+            return ResponseEntity.ok(riderProfile);
+        }
+        catch (Exception e) {
+            message.setMessage(e.getMessage());
+            return ResponseEntity.ok(message);
+        }
     }
 
     private Authority createAuthority(String roleCode,String roleDescription) {
